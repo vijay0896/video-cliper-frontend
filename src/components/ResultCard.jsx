@@ -13,6 +13,7 @@ import WatermarkModal, { watermarkNoticeDismissed } from './WatermarkModal';
 import TikTokDraftNotice from './TikTokDraftNotice';
 import { useAuth } from '../contexts/AuthContext';
 import { renderInBrowser } from '../lib/renderInBrowser';
+import VideoCaptionOverlay from './VideoCaptionOverlay';
 
 const QUIET_BTN = 'group flex flex-col items-center justify-center gap-1 py-2.5 sm:py-2 px-1 rounded-input border border-rule hover:bg-paper3 text-[11px] lowercase text-ink2 whitespace-nowrap transition-colors disabled:opacity-45 disabled:cursor-not-allowed';
 
@@ -81,6 +82,22 @@ export default function ResultCard({ clip, index, jobId, durable, uploadPostKey,
     const [showWatermarkModal, setShowWatermarkModal] = useState(false);
     const { plan } = useAuth();
     const videoRef = React.useRef(null);
+
+    // Normalize caption timestamps relative to clip start
+    const normalizedCaptions = React.useMemo(() => {
+        const raw = clip.captions || [];
+        if (!raw.length) return [];
+        const clipStartMs = (clip.start || 0) * 1000;
+        const isAbsolute = raw[0]?.startMs >= clipStartMs && clipStartMs > 0;
+        return raw.map((c) => ({
+            text: c.text,
+            startMs: isAbsolute ? Math.max(0, Math.round(c.startMs - clipStartMs)) : Math.round(c.startMs),
+            endMs: isAbsolute ? Math.max(0, Math.round(c.endMs - clipStartMs)) : Math.round(c.endMs),
+        }));
+    }, [clip.captions, clip.start]);
+
+    // Live automatic captions on the video player (enabled by default)
+    const [captionsEnabled, setCaptionsEnabled] = useState(true);
     // Pristine base clip (no burned subtitles/hook), stable regardless of how
     // clip.video_url mutates after server edits. Used as the compositing base
     // for the Remotion preview so it never stacks subtitles over an already-
@@ -123,26 +140,61 @@ export default function ResultCard({ clip, index, jobId, durable, uploadPostKey,
     const downloadClip = async () => {
         try {
             setDownloadPct(0);
-            const response = await fetch(currentVideoUrl);
-            if (!response.ok) throw new Error('Download failed');
-            const total = Number(response.headers.get('content-length')) || 0;
             let blob;
-            // No body reader (old browser) or no length to measure against: fall
-            // back to the plain path rather than lose the download.
-            if (!response.body || !total) {
-                blob = await response.blob();
-            } else {
-                const reader = response.body.getReader();
-                const chunks = [];
-                let received = 0;
-                for (;;) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    chunks.push(value);
-                    received += value.length;
-                    setDownloadPct(Math.min(99, Math.round((received / total) * 100)));
+
+            // When captions are enabled, render using Remotion in browser so the saved MP4 includes the captions
+            if (captionsEnabled && normalizedCaptions.length > 0 && !hasServerBurns) {
+                try {
+                    const subConfig = activeLayers.subtitles || {
+                        captions: normalizedCaptions,
+                        position: 'bottom',
+                        style: {
+                            fontFamily: 'Anton',
+                            fontSize: 48,
+                            fontColor: '#FFFFFF',
+                            highlightColor: '#FFE500',
+                            borderColor: '#000000',
+                            borderWidth: 3,
+                            bgColor: '#000000',
+                            bgOpacity: 0,
+                            animation: 'pop',
+                            uppercase: true,
+                        },
+                    };
+                    const blobUrl = await renderInBrowser({
+                        videoUrl: originalVideoUrl,
+                        durationInSeconds: clipDuration,
+                        subtitles: subConfig,
+                        hook: activeLayers.hook,
+                        effects: activeLayers.effects,
+                        onProgress: (p) => setDownloadPct(Math.round(p * 100)),
+                    });
+                    const res = await fetch(blobUrl);
+                    blob = await res.blob();
+                } catch (browserRenderErr) {
+                    console.warn('Browser render fallback to raw clip:', browserRenderErr);
                 }
-                blob = new Blob(chunks, { type: 'video/mp4' });
+            }
+
+            if (!blob) {
+                const response = await fetch(currentVideoUrl);
+                if (!response.ok) throw new Error('Download failed');
+                const total = Number(response.headers.get('content-length')) || 0;
+                if (!response.body || !total) {
+                    blob = await response.blob();
+                } else {
+                    const reader = response.body.getReader();
+                    const chunks = [];
+                    let received = 0;
+                    for (;;) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        chunks.push(value);
+                        received += value.length;
+                        setDownloadPct(Math.min(99, Math.round((received / total) * 100)));
+                    }
+                    blob = new Blob(chunks, { type: 'video/mp4' });
+                }
             }
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -480,22 +532,11 @@ export default function ResultCard({ clip, index, jobId, durable, uploadPostKey,
         setIsSubtitling(true);
         setEditError(null);
         try {
-            // Karaoke styles are burned server-side (ASS word-highlight render);
-            // the in-browser Remotion path only handles classic styles, and only
-            // when the server file has no burned-in content to preserve.
-            if (options.remotion && options.style !== 'karaoke' && !hasServerBurns) {
-                // Accumulate layer and render all layers together
+            // Apply subtitle configuration to active layers and enable live caption overlay
+            if (options.remotion) {
                 const newLayers = { ...activeLayers, subtitles: options.remotion };
                 setActiveLayers(newLayers);
-                const blobUrl = await renderInBrowser({
-                    videoUrl: originalVideoUrl,
-                    durationInSeconds: clipDuration,
-                    subtitles: newLayers.subtitles,
-                    hook: newLayers.hook,
-                    effects: newLayers.effects,
-                });
-                setCurrentVideoUrl(blobUrl);
-                if (videoRef.current) videoRef.current.load();
+                setCaptionsEnabled(true);
                 setShowSubtitleModal(false);
                 return;
             }
@@ -864,6 +905,15 @@ export default function ResultCard({ clip, index, jobId, durable, uploadPostKey,
                         }
                     }}
                 />
+
+                {/* Real-time Dynamic Caption Overlay */}
+                <VideoCaptionOverlay
+                    videoRef={videoRef}
+                    captions={normalizedCaptions}
+                    config={activeLayers.subtitles}
+                    enabled={captionsEnabled}
+                />
+
                 <div className="absolute top-3 left-3 flex gap-2">
                     {/* Stays the clip's own number, not its rank: the cards are
                         ordered by score, but this is what the downloaded file
@@ -871,6 +921,20 @@ export default function ResultCard({ clip, index, jobId, durable, uploadPostKey,
                     <span className="bg-black/70 text-ink font-mono text-micro uppercase px-2 py-1 rounded-full">
                         Clip {index + 1}
                     </span>
+                    {normalizedCaptions.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setCaptionsEnabled((v) => !v)}
+                            title={captionsEnabled ? 'Captions ON (click to hide)' : 'Captions OFF (click to show)'}
+                            className={`px-2 py-1 rounded-full font-mono text-micro uppercase transition-all flex items-center gap-1 ${
+                                captionsEnabled
+                                    ? 'bg-brass text-black font-semibold shadow hover:opacity-90'
+                                    : 'bg-black/70 text-muted hover:text-ink'
+                            }`}
+                        >
+                            CC {captionsEnabled ? 'ON' : 'OFF'}
+                        </button>
+                    )}
                     {/* A bare number on a thumbnail reads as a duration, a
                         position, anything — it has to name itself and carry
                         its scale, or it is decoration. */}
@@ -1281,6 +1345,7 @@ export default function ResultCard({ clip, index, jobId, durable, uploadPostKey,
                 jobId={jobId}
                 clipIndex={index}
                 existingHook={activeLayers.hook}
+                initialCaptions={normalizedCaptions}
             />
 
             <HookModal

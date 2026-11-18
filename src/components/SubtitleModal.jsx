@@ -115,7 +115,7 @@ const swatchClass = (selected) =>
         ? 'ring-2 ring-[color:var(--color-accent)] ring-offset-2 ring-offset-[color:var(--color-paper-2)]'
         : 'ring-1 ring-[color:var(--color-rule-2)] hover:ring-[color:var(--color-accent)]'}`;
 
-export default function SubtitleModal({ isOpen, onClose, onGenerate, onApplyAll, onRemove, isProcessing, videoUrl, jobId, clipIndex, existingHook, bulkCount = 0, bulkProgress }) {
+export default function SubtitleModal({ isOpen, onClose, onGenerate, onApplyAll, onRemove, isProcessing, videoUrl, jobId, clipIndex, existingHook, bulkCount = 0, bulkProgress, initialCaptions = [] }) {
     // Opens on the look the clip already has (the Default preset), so
     // "apply" without touching anything changes nothing.
     const [position, setPosition] = useState('bottom');
@@ -175,11 +175,21 @@ export default function SubtitleModal({ isOpen, onClose, onGenerate, onApplyAll,
     const [captionsLoading, setCaptionsLoading] = useState(false);
     const [useRemotionPreview, setUseRemotionPreview] = useState(false);
 
-    // Fetch word-level captions when modal opens
+    // Fetch or populate word-level captions when modal opens
     useEffect(() => {
-        if (!isOpen || !jobId || clipIndex === undefined) return;
+        if (!isOpen) return;
 
-        setCaptionsLoading(true);
+        // Use passed initialCaptions immediately if available
+        if (initialCaptions && initialCaptions.length > 0) {
+            setCaptions(initialCaptions);
+            setOriginalCaptions(initialCaptions);
+            setEditableText(initialCaptions.map(c => c.text).join(' '));
+            setUseRemotionPreview(true);
+        }
+
+        if (!jobId || clipIndex === undefined) return;
+
+        setCaptionsLoading(!initialCaptions?.length);
         apiFetch(`/api/clip/${jobId}/${clipIndex}/transcript`)
             .then((res) => res.ok ? res.json() : null)
             .then((data) => {
@@ -189,13 +199,17 @@ export default function SubtitleModal({ isOpen, onClose, onGenerate, onApplyAll,
                     setEditableText(data.captions.map(c => c.text).join(' '));
                     setDurationSec(data.durationSec || 30);
                     setUseRemotionPreview(true);
-                } else {
+                } else if (!initialCaptions || initialCaptions.length === 0) {
                     setUseRemotionPreview(false);
                 }
             })
-            .catch(() => setUseRemotionPreview(false))
+            .catch(() => {
+                if (!initialCaptions || initialCaptions.length === 0) {
+                    setUseRemotionPreview(false);
+                }
+            })
             .finally(() => setCaptionsLoading(false));
-    }, [isOpen, jobId, clipIndex]);
+    }, [isOpen, jobId, clipIndex, initialCaptions]);
 
     // When user edits text, redistribute words across original timestamps
     const handleTextEdit = (newText) => {
