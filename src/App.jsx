@@ -2114,11 +2114,11 @@ function App() {
 
                 {/* The render is dead time: the user is watching a progress bar
                     with nothing to do, so this is where the one star ask goes. */}
-                {status === 'processing' && (
+                {/* {status === 'processing' && (
                   <div className="my-3">
                     <StarBanner message="Got a minute while this renders?" />
                   </div>
-                )}
+                )}   */}
 
                 {/* Logs Terminal */}
                 <div className={`bg-paper rounded-card border border-rule overflow-hidden flex flex-col transition-all duration-500 ${status === 'complete' ? `min-h-0 opacity-50 hover:opacity-100 ${logsVisible ? 'h-32' : 'h-auto'}` : `flex-1 ${logsVisible ? 'min-h-[160px] sm:min-h-[200px]' : 'min-h-0 flex-none'}`}`}>
