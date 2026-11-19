@@ -18,6 +18,11 @@ function formatDuration(clip) {
     return `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
 }
 
+function getClipFallbackDescription(clip) {
+    const topic = clip.hook || clip.title || 'Viral Short';
+    return `${topic}! 🔥 Watch till the end! What do you think? Let us know in the comments below! 👇\n\n#shorts #viral #reels #trending #fyp`;
+}
+
 export default function ResultCard({
     clip,
     index,
@@ -51,20 +56,27 @@ export default function ResultCard({
     const [downloadPct, setDownloadPct] = useState(null);
     const [copied, setCopied] = useState(null);
 
-    const [copyTitle, setCopyTitle] = useState(clip.video_title_for_youtube_short || clip.title || '');
-    const [copyDescription, setCopyDescription] = useState(
-        clip.video_description_for_tiktok || clip.video_description_for_instagram || clip.description || ''
-    );
+    const initialDesc =
+        clip.video_description_for_tiktok ||
+        clip.video_description_for_instagram ||
+        clip.description ||
+        getClipFallbackDescription(clip);
+
+    const [copyTitle, setCopyTitle] = useState(clip.video_title_for_youtube_short || clip.title || 'Viral Clip Generated');
+    const [copyDescription, setCopyDescription] = useState(initialDesc);
     const [isGeneratingCopy, setIsGeneratingCopy] = useState(false);
 
     useEffect(() => {
         if (clip.video_title_for_youtube_short || clip.title) {
             setCopyTitle((prev) => prev || clip.video_title_for_youtube_short || clip.title);
         }
-        if (clip.video_description_for_tiktok || clip.video_description_for_instagram || clip.description) {
-            setCopyDescription((prev) => prev || clip.video_description_for_tiktok || clip.video_description_for_instagram || clip.description);
-        }
-    }, [clip.video_title_for_youtube_short, clip.title, clip.video_description_for_tiktok, clip.video_description_for_instagram, clip.description]);
+        const desc =
+            clip.video_description_for_tiktok ||
+            clip.video_description_for_instagram ||
+            clip.description ||
+            getClipFallbackDescription(clip);
+        setCopyDescription((prev) => (prev && prev !== "No description generated yet" ? prev : desc));
+    }, [clip.video_title_for_youtube_short, clip.title, clip.video_description_for_tiktok, clip.video_description_for_instagram, clip.description, clip.hook]);
 
     const serverVideoFile = (clip.video_url || '').split('/').pop();
 
@@ -335,13 +347,13 @@ export default function ResultCard({
                     <div className="bg-paper rounded-input px-3 py-2 border border-rule flex items-center gap-2 min-w-0 overflow-hidden">
                         <span className="eyebrow shrink-0 text-muted">TIKTOK · IG</span>
                         <p className="text-xs text-ink2 truncate flex-1 min-w-0" title={copyDescription}>
-                            {copyDescription || "No description generated yet"}
+                            {copyDescription}
                         </p>
                         <button
                             onClick={() => handleCopy('caption', copyDescription)}
                             disabled={!copyDescription}
                             aria-label="copy caption"
-                            className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer flex items-center gap-1 disabled:opacity-30"
+                            className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer flex items-center gap-1"
                             title="Copy Description"
                         >
                             {copied === 'caption' ? (
@@ -423,7 +435,7 @@ export default function ResultCard({
                                 onClick={() => handleCopy('caption', copyDescription)}
                                 disabled={!copyDescription}
                                 aria-label="copy caption"
-                                className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer flex items-center gap-1 disabled:opacity-30"
+                                className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer flex items-center gap-1"
                             >
                                 {copied === 'caption' ? (
                                     <span className="text-xs text-ok font-mono flex items-center gap-1"><Check size={14} /> Copied!</span>
@@ -433,7 +445,7 @@ export default function ResultCard({
                             </button>
                         </div>
                         <p className="text-sm text-ink2 select-all break-words bg-paper rounded-input p-3 border border-rule whitespace-pre-wrap">
-                            {copyDescription || "No description generated yet. Click 'Generate Title & Description' to generate one."}
+                            {copyDescription}
                         </p>
                     </div>
                 </div>
