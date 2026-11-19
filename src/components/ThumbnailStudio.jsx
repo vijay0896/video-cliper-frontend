@@ -305,7 +305,13 @@ export default function ThumbnailStudio({ geminiApiKey, uploadPostKey, uploadUse
       if (!data.thumbnails || data.thumbnails.length === 0) {
         throw new Error('No thumbnails were generated. Your Gemini API key may not have access to image generation.');
       }
-      setGeneratedThumbnails(data.thumbnails);
+      const rawThumbnails = data.thumbnails || [];
+      const normalizedThumbnails = rawThumbnails.map((t, idx) =>
+        typeof t === 'string'
+          ? { url: t, text: `Concept ${idx + 1}`, why: 'High CTR design' }
+          : t
+      );
+      setGeneratedThumbnails(normalizedThumbnails);
     } catch (e) {
       if (e instanceof QuotaError) { openQuotaWall(e, 'thumbnails'); return; }
       alert(`Generation failed: ${e.message}`);
@@ -327,7 +333,13 @@ export default function ThumbnailStudio({ geminiApiKey, uploadPostKey, uploadUse
     setFramesLoading(true);
     apiFetch(`/api/thumbnail/frames/${sessionId}`)
       .then(res => (res.ok ? res.json() : { frames: [] }))
-      .then(data => setFrames(data.frames || []))
+      .then(data => {
+        const rawFrames = data.frames || [];
+        const normalized = rawFrames.map((f, idx) =>
+          typeof f === 'string' ? { url: f, time: idx * 5 } : f
+        );
+        setFrames(normalized);
+      })
       .catch(() => setFrames([]))
       .finally(() => setFramesLoading(false));
   }, [step, mode, sessionId]);
@@ -772,19 +784,23 @@ export default function ThumbnailStudio({ geminiApiKey, uploadPostKey, uploadUse
                   ) : (
                     <>
                       <div className="grid grid-cols-3 gap-2">
-                        {frames.map((f) => (
+                        {frames.map((f, idx) => {
+                          const url = typeof f === 'string' ? f : f?.url || '';
+                          const time = typeof f === 'object' && f?.time != null ? f.time : idx * 5;
+                          return (
                           <button
-                            key={f.url}
+                            key={url || idx}
                             type="button"
-                            onClick={() => setSelectedFrame(selectedFrame === f.url ? null : f.url)}
-                            className={`relative rounded-input overflow-hidden border-2 transition-colors ${selectedFrame === f.url ? 'border-brass' : 'border-transparent hover:border-rule2'}`}
+                            onClick={() => setSelectedFrame(selectedFrame === url ? null : url)}
+                            className={`relative rounded-input overflow-hidden border-2 transition-colors ${selectedFrame === url ? 'border-brass' : 'border-transparent hover:border-rule2'}`}
                           >
-                            <img src={getApiUrl(f.url)} alt="" className="w-full aspect-video object-cover" />
+                            <img src={getApiUrl(url)} alt="" className="w-full aspect-video object-cover" />
                             <span className="absolute bottom-1 right-1 readout bg-black/60 text-white px-1 rounded">
-                              {Math.floor(f.time / 60)}:{String(Math.floor(f.time % 60)).padStart(2, '0')}
+                              {Math.floor(time / 60)}:{String(Math.floor(time % 60)).padStart(2, '0')}
                             </span>
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                       <p className="text-xs text-muted lowercase">
                         {selectedFrame ? 'This frame is the person reference (a photo upload below overrides it).' : 'Pick a frame so the thumbnail shows you, not a stranger.'}
@@ -878,10 +894,13 @@ export default function ThumbnailStudio({ geminiApiKey, uploadPostKey, uploadUse
                   <p className="text-sm lowercase text-muted">Generated Thumbnails — click to select for publishing</p>
                   <div className="grid gap-4">
                     {generatedThumbnails.map((thumb, i) => {
-                      const url = thumb.url;
+                      const url = typeof thumb === 'string' ? thumb : thumb?.url || '';
+                      const text = typeof thumb === 'object' ? thumb?.text : '';
+                      const why = typeof thumb === 'object' ? thumb?.why : '';
+                      const fallback = typeof thumb === 'object' ? thumb?.fallback : false;
                       return (
                       <div
-                        key={url}
+                        key={url || i}
                         onClick={() => setSelectedThumbnail(url)}
                         className={`glass-panel overflow-hidden group relative cursor-pointer transition-colors duration-200 ${selectedThumbnail === url ? 'border-2 border-brass' : ''
                           }`}
@@ -903,13 +922,13 @@ export default function ThumbnailStudio({ geminiApiKey, uploadPostKey, uploadUse
                         <div className="p-3 flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <span className="text-xs lowercase text-muted flex items-center gap-2">
-                              Thumbnail {i + 1}{thumb.text ? ` · "${thumb.text}"` : ''}
+                              Thumbnail {i + 1}{text ? ` · "${text}"` : ''}
                               {selectedThumbnail === url && (
                                 <span className="text-brass flex items-center gap-1"><Check size={10} /> Selected</span>
                               )}
                             </span>
-                            {thumb.why && <p className="text-xs text-muted mt-1 truncate">{thumb.why}</p>}
-                            {thumb.fallback && <p className="text-xs text-warn mt-1">Gemini refused to draw this person (public figures are blocked), so it was rendered without them.</p>}
+                            {why && <p className="text-xs text-muted mt-1 truncate">{why}</p>}
+                            {fallback && <p className="text-xs text-warn mt-1">Gemini refused to draw this person (public figures are blocked), so it was rendered without them.</p>}
                           </div>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDownload(url); }}
@@ -927,15 +946,18 @@ export default function ThumbnailStudio({ geminiApiKey, uploadPostKey, uploadUse
                   <div className="card p-4 space-y-3">
                     <p className="eyebrow">PHONE PREVIEW</p>
                     <div className="space-y-3">
-                      {generatedThumbnails.map((thumb) => (
-                        <div key={thumb.url} className="flex gap-3 items-start">
-                          <img src={getApiUrl(thumb.url)} alt="" className="w-[168px] h-[94px] object-cover rounded-input shrink-0" />
+                      {generatedThumbnails.map((thumb, i) => {
+                        const url = typeof thumb === 'string' ? thumb : thumb?.url || '';
+                        return (
+                        <div key={url || i} className="flex gap-3 items-start">
+                          <img src={getApiUrl(url)} alt="" className="w-[168px] h-[94px] object-cover rounded-input shrink-0" />
                           <div className="min-w-0">
                             <p className="text-sm text-ink leading-snug line-clamp-2">{selectedTitle || manualTitle}</p>
                             <p className="text-xs text-muted mt-1">Your channel · 1.2K views · 2 hours ago</p>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 

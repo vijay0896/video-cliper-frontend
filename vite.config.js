@@ -16,7 +16,15 @@ export default defineConfig(({ mode }) => {
         '/output': { target: backend, changeOrigin: true },
         '/uploads': { target: backend, changeOrigin: true },
         '/videos': { target: backend, changeOrigin: true },
-        '/thumbnails': { target: backend, changeOrigin: true },
+        '/thumbnails': {
+          target: backend,
+          changeOrigin: true,
+          bypass: (req) => {
+            if (req.headers.accept?.includes('text/html')) {
+              return '/index.html';
+            }
+          },
+        },
         '/gallery': { target: backend, changeOrigin: true },
         '/video': { target: backend, changeOrigin: true },
         '/render': { target: renderer, changeOrigin: true },

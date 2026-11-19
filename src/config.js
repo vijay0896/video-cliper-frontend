@@ -22,6 +22,7 @@ export const withParam = (url, key, value) => {
 };
 
 export const getApiUrl = (path) => {
+    if (!path || typeof path !== 'string') return '';
     if (path.startsWith('http')) return path;
     // Ensure path starts with / if not present
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
