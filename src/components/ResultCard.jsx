@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Loader2, Copy, Check, FileText, TrendingUp } from 'lucide-react';
+import { Download, Loader2, Copy, Check, FileText, TrendingUp, Sparkles } from 'lucide-react';
 import { getApiUrl } from '../config';
+import { apiFetch } from '../lib/api';
 import Modal from './ui/Modal';
 
 function clipDurationSeconds(clip) {
@@ -50,6 +51,21 @@ export default function ResultCard({
     const [downloadPct, setDownloadPct] = useState(null);
     const [copied, setCopied] = useState(null);
 
+    const [copyTitle, setCopyTitle] = useState(clip.video_title_for_youtube_short || clip.title || '');
+    const [copyDescription, setCopyDescription] = useState(
+        clip.video_description_for_tiktok || clip.video_description_for_instagram || clip.description || ''
+    );
+    const [isGeneratingCopy, setIsGeneratingCopy] = useState(false);
+
+    useEffect(() => {
+        if (clip.video_title_for_youtube_short || clip.title) {
+            setCopyTitle((prev) => prev || clip.video_title_for_youtube_short || clip.title);
+        }
+        if (clip.video_description_for_tiktok || clip.video_description_for_instagram || clip.description) {
+            setCopyDescription((prev) => prev || clip.video_description_for_tiktok || clip.video_description_for_instagram || clip.description);
+        }
+    }, [clip.video_title_for_youtube_short, clip.title, clip.video_description_for_tiktok, clip.video_description_for_instagram, clip.description]);
+
     const serverVideoFile = (clip.video_url || '').split('/').pop();
 
     useEffect(() => {
@@ -78,12 +94,54 @@ export default function ResultCard({
     }, [clip.video_url]);
 
     const handleCopy = async (field, text) => {
+        if (!text) return;
         try {
-            await navigator.clipboard.writeText(text || '');
+            await navigator.clipboard.writeText(text);
             setCopied(field);
             setTimeout(() => setCopied(null), 2000);
         } catch {
             // clipboard unavailable
+        }
+    };
+
+    const handleGenerateCopy = async () => {
+        setIsGeneratingCopy(true);
+        try {
+            const savedApiKey = localStorage.getItem('gemini_key') || '';
+            const headers = { 'Content-Type': 'application/json' };
+            if (savedApiKey) headers['X-Gemini-Key'] = savedApiKey;
+
+            const res = await apiFetch('/api/clip/generate-copy', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    jobId,
+                    clipIndex: index,
+                    title: copyTitle || clip.title || clip.hook,
+                    hook: clip.hook || clip.title,
+                    context: clip.why || clip.reason,
+                }),
+            });
+
+            if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+            const data = await res.json();
+            const result = data.data || data;
+
+            if (result.title) {
+                setCopyTitle(result.title);
+                clip.video_title_for_youtube_short = result.title;
+                clip.title = result.title;
+            }
+            if (result.description) {
+                setCopyDescription(result.description);
+                clip.video_description_for_tiktok = result.description;
+                clip.video_description_for_instagram = result.description;
+                clip.description = result.description;
+            }
+        } catch (err) {
+            console.error('Failed to generate copy:', err);
+        } finally {
+            setIsGeneratingCopy(false);
         }
     };
 
@@ -195,8 +253,8 @@ export default function ResultCard({
             {/* Right: Content & Details */}
             <div className="flex-1 p-4 md:p-5 flex flex-col overflow-hidden min-w-0">
                 <div className="mb-4">
-                    <h3 className="text-base font-medium text-ink leading-tight line-clamp-2 mb-2 break-words" title={clip.video_title_for_youtube_short}>
-                        {clip.video_title_for_youtube_short || "Viral Clip Generated"}
+                    <h3 className="text-base font-medium text-ink leading-tight line-clamp-2 mb-2 break-words" title={copyTitle || clip.video_title_for_youtube_short}>
+                        {copyTitle || clip.video_title_for_youtube_short || "Viral Clip Generated"}
                     </h3>
                     {clip.why && (
                         <div
@@ -230,39 +288,75 @@ export default function ResultCard({
                     </div>
                 </div>
 
-                {/* Descriptions (compact) */}
+                {/* Descriptions & AI Copy Generator */}
                 <div className="flex-1 min-h-0 space-y-2 mb-4">
+                    {/* Generate Title & Description Button */}
+                    <button
+                        type="button"
+                        onClick={handleGenerateCopy}
+                        disabled={isGeneratingCopy}
+                        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-input border border-brass/50 bg-brass/10 hover:bg-brass/20 active:scale-[0.99] text-xs font-semibold text-ink transition-all cursor-pointer shadow-sm disabled:opacity-50 group/gen"
+                        title="Generate viral YouTube Shorts title and TikTok/Instagram description with hashtags"
+                    >
+                        {isGeneratingCopy ? (
+                            <>
+                                <Loader2 size={14} className="animate-spin text-brass" />
+                                <span className="text-ink">Generating Title & Description…</span>
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles size={14} className="text-brass transition-transform group-hover/gen:scale-110" />
+                                <span>{copyTitle || copyDescription ? 'Regenerate Title & Description' : 'Generate Title & Description'}</span>
+                            </>
+                        )}
+                    </button>
+
                     <div className="bg-paper rounded-input px-3 py-2 border border-rule flex items-center gap-2 min-w-0 overflow-hidden">
-                        <span className="eyebrow shrink-0">YOUTUBE</span>
-                        <p className="text-xs text-ink2 truncate flex-1 min-w-0">
-                            {clip.video_title_for_youtube_short || "Viral Short Video"}
+                        <span className="eyebrow shrink-0 text-muted">YOUTUBE</span>
+                        <p className="text-xs text-ink truncate flex-1 min-w-0" title={copyTitle || "Viral Short Video"}>
+                            {copyTitle || "Viral Short Video"}
                         </p>
                         <button
-                            onClick={() => handleCopy('youtube', clip.video_title_for_youtube_short || "Viral Short Video")}
+                            onClick={() => handleCopy('youtube', copyTitle || "Viral Short Video")}
                             aria-label="copy youtube title"
-                            className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer"
+                            className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer flex items-center gap-1"
+                            title="Copy YouTube Title"
                         >
-                            {copied === 'youtube' ? <Check size={14} className="text-ok" /> : <Copy size={14} />}
+                            {copied === 'youtube' ? (
+                                <span className="text-[11px] text-ok font-mono flex items-center gap-1">
+                                    <Check size={14} className="text-ok" /> Copied!
+                                </span>
+                            ) : (
+                                <Copy size={14} />
+                            )}
                         </button>
                     </div>
 
                     <div className="bg-paper rounded-input px-3 py-2 border border-rule flex items-center gap-2 min-w-0 overflow-hidden">
-                        <span className="eyebrow shrink-0">TIKTOK · IG</span>
-                        <p className="text-xs text-ink2 truncate flex-1 min-w-0">
-                            {clip.video_description_for_tiktok || clip.video_description_for_instagram}
+                        <span className="eyebrow shrink-0 text-muted">TIKTOK · IG</span>
+                        <p className="text-xs text-ink2 truncate flex-1 min-w-0" title={copyDescription}>
+                            {copyDescription || "No description generated yet"}
                         </p>
                         <button
-                            onClick={() => handleCopy('caption', clip.video_description_for_tiktok || clip.video_description_for_instagram)}
+                            onClick={() => handleCopy('caption', copyDescription)}
+                            disabled={!copyDescription}
                             aria-label="copy caption"
-                            className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer"
+                            className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer flex items-center gap-1 disabled:opacity-30"
+                            title="Copy Description"
                         >
-                            {copied === 'caption' ? <Check size={14} className="text-ok" /> : <Copy size={14} />}
+                            {copied === 'caption' ? (
+                                <span className="text-[11px] text-ok font-mono flex items-center gap-1">
+                                    <Check size={14} className="text-ok" /> Copied!
+                                </span>
+                            ) : (
+                                <Copy size={14} />
+                            )}
                         </button>
                     </div>
 
                     <button
                         onClick={() => setShowDescModal(true)}
-                        className="w-full flex items-center justify-center gap-2 py-2 rounded-input border border-dashed border-rule text-xs lowercase text-muted hover:text-brass hover:border-rule2 transition-colors cursor-pointer"
+                        className="w-full flex items-center justify-center gap-2 py-1.5 rounded-input border border-dashed border-rule text-xs lowercase text-muted hover:text-brass hover:border-rule2 transition-colors cursor-pointer"
                     >
                         <FileText size={14} /> view descriptions
                     </button>
@@ -306,15 +400,19 @@ export default function ResultCard({
                         <div className="flex items-center justify-between gap-2 mb-1.5">
                             <label className="eyebrow">YOUTUBE TITLE</label>
                             <button
-                                onClick={() => handleCopy('youtube', clip.video_title_for_youtube_short || "Viral Short Video")}
+                                onClick={() => handleCopy('youtube', copyTitle || "Viral Short Video")}
                                 aria-label="copy youtube title"
-                                className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer"
+                                className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer flex items-center gap-1"
                             >
-                                {copied === 'youtube' ? <Check size={14} className="text-ok" /> : <Copy size={14} />}
+                                {copied === 'youtube' ? (
+                                    <span className="text-xs text-ok font-mono flex items-center gap-1"><Check size={14} /> Copied!</span>
+                                ) : (
+                                    <Copy size={14} />
+                                )}
                             </button>
                         </div>
-                        <p className="text-sm text-ink2 select-all break-words bg-paper rounded-input p-3 border border-rule">
-                            {clip.video_title_for_youtube_short || "Viral Short Video"}
+                        <p className="text-sm text-ink select-all break-words bg-paper rounded-input p-3 border border-rule">
+                            {copyTitle || "Viral Short Video"}
                         </p>
                     </div>
 
@@ -322,15 +420,20 @@ export default function ResultCard({
                         <div className="flex items-center justify-between gap-2 mb-1.5">
                             <label className="eyebrow">TIKTOK · IG CAPTION</label>
                             <button
-                                onClick={() => handleCopy('caption', clip.video_description_for_tiktok || clip.video_description_for_instagram)}
+                                onClick={() => handleCopy('caption', copyDescription)}
+                                disabled={!copyDescription}
                                 aria-label="copy caption"
-                                className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer"
+                                className="p-1 rounded-full text-muted hover:text-brass transition-colors shrink-0 cursor-pointer flex items-center gap-1 disabled:opacity-30"
                             >
-                                {copied === 'caption' ? <Check size={14} className="text-ok" /> : <Copy size={14} />}
+                                {copied === 'caption' ? (
+                                    <span className="text-xs text-ok font-mono flex items-center gap-1"><Check size={14} /> Copied!</span>
+                                ) : (
+                                    <Copy size={14} />
+                                )}
                             </button>
                         </div>
                         <p className="text-sm text-ink2 select-all break-words bg-paper rounded-input p-3 border border-rule whitespace-pre-wrap">
-                            {clip.video_description_for_tiktok || clip.video_description_for_instagram}
+                            {copyDescription || "No description generated yet. Click 'Generate Title & Description' to generate one."}
                         </p>
                     </div>
                 </div>
