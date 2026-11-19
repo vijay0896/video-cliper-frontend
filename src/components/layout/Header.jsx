@@ -1,16 +1,16 @@
 /**
  * @file src/components/layout/Header.jsx
- * @description Application top navigation bar with status badges and mobile menu button
+ * @description Application top navigation bar with status badges, desktop sidebar toggle, and mobile menu button
  */
 import React from 'react';
-import { Menu, Key, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Menu, Key, Sparkles, CheckCircle2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useLayout } from '../../context/LayoutContext.jsx';
 import { useAppSelector } from '../../store/hooks.js';
 import { Link, useLocation } from 'react-router-dom';
 import { NAVIGATION_ITEMS } from './sidebar.types.js';
 
 export const Header = () => {
-  const { toggleSidebar } = useLayout();
+  const { toggleSidebar, isCollapsed, toggleCollapse } = useLayout();
   const location = useLocation();
   const { geminiApiKey } = useAppSelector((state) => state.auth);
 
@@ -18,7 +18,8 @@ export const Header = () => {
 
   return (
     <header className="h-14 sm:h-16 border-b border-rule bg-paper/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Mobile menu toggle */}
         <button
           onClick={toggleSidebar}
           className="md:hidden p-2 text-muted hover:text-ink rounded-lg hover:bg-paper2 transition-colors cursor-pointer"
@@ -26,6 +27,8 @@ export const Header = () => {
         >
           <Menu size={20} />
         </button>
+
+        
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-muted hidden sm:inline">{activeNav.ord} ·</span>
