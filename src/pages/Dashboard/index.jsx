@@ -25,11 +25,6 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-// Modals
-import HookModal from '../../components/HookModal.jsx';
-import SubtitleModal from '../../components/SubtitleModal.jsx';
-import ClipEditor from '../../components/ClipEditor.jsx';
-
 // Custom TikTok Icon
 const TikTokIcon = ({ size = 16, className = '' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -390,34 +385,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Editing Modals */}
-      {activeModal === 'hook' && activeClip && (
-        <HookModal
-          jobId={activeJobId}
-          clip={activeClip}
-          index={activeClipIndex}
-          onClose={() => dispatch(closeModal())}
-        />
-      )}
-
-      {activeModal === 'subtitle' && activeClip && (
-        <SubtitleModal
-          jobId={activeJobId}
-          clip={activeClip}
-          clipIndex={activeClipIndex}
-          onClose={() => dispatch(closeModal())}
-        />
-      )}
-
-      {activeModal === 'reframe' && activeClip && (
-        <ClipEditor
-          jobId={activeJobId}
-          clip={activeClip}
-          clipIndex={activeClipIndex}
-          onClose={() => dispatch(closeModal())}
-        />
       )}
     </div>
   );

@@ -10,11 +10,8 @@ import ThumbnailStudio from './components/ThumbnailStudio';
 import SaaShortsTab from './components/SaaShortsTab';
 import UGCGallery from './components/UGCGallery';
 import ScheduleWeekModal from './components/ScheduleWeekModal';
-import ClipEditor from './components/ClipEditor';
-import ReframeEditor from './components/ReframeEditor';
 import UsageMeter from './components/UsageMeter';
 import TopUpModal from './components/TopUpModal';
-import WatermarkModal, { watermarkNoticeDismissed } from './components/WatermarkModal';
 import { getApiUrl } from './config';
 import StarBanner from './components/StarBanner';
 import PlanChoiceModal from './components/PlanChoiceModal';
@@ -2513,24 +2510,6 @@ function App() {
       )}
 
 
-      {editingClip !== null && results?.clips?.[editingClip] && (
-        <ClipEditor
-          jobId={jobId}
-          clipIndex={editingClip}
-          clipTitle={results.clips[editingClip].video_title_for_youtube_short || ''}
-          onClose={() => setEditingClip(null)}
-          onRerendered={handleClipRerendered}
-        />
-      )}
-      {reframingClip !== null && results?.clips?.[reframingClip] && (
-        <ReframeEditor
-          jobId={jobId}
-          clipIndex={reframingClip}
-          clipTitle={results.clips[reframingClip].video_title_for_youtube_short || ''}
-          onClose={() => setReframingClip(null)}
-          onReframed={handleClipRerendered}
-        />
-      )}
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} queued={typeof peekPendingJob()?.data?.payload === 'string'} />}
       {showSurvey && <OnboardingSurvey onDone={() => setSurveyDone(true)} />}
       {tutorialPhase && !showSurvey && (
@@ -2544,15 +2523,6 @@ function App() {
         />
       )}
       {showPlanChoice && <PlanChoiceModal onClose={() => setShowPlanChoice(false)} />}
-      {showWmNotice && (
-        <WatermarkModal
-          source="results"
-          jobId={jobId}
-          previewSrc={results?.clips?.[0]?.video_url ? getApiUrl(results.clips[0].video_url) : null}
-          onUpgrade={openUpsell}
-          onClose={() => setShowWmNotice(false)}
-        />
-      )}
       {showTopUp && (
         <TopUpModal
           onClose={() => setShowTopUp(false)}

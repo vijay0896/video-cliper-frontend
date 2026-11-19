@@ -12,24 +12,7 @@ export const ResultsGallerySection = ({
   jobId,
   clips = [],
   onReset,
-  onOpenHookModal,
-  onOpenSubtitleModal,
-  onOpenReframeModal,
 }) => {
-  const dispatch = useAppDispatch();
-
-  const handleModeChanged = (index, data) => {
-    dispatch(
-      updateClipResult({
-        index,
-        updatedClip: {
-          video_url: data.new_video_url,
-          videoUrl: data.new_video_url,
-        },
-      })
-    );
-  };
-
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Gallery Header Strip */}
@@ -58,10 +41,6 @@ export const ResultsGallerySection = ({
             jobId={jobId}
             clip={clip}
             index={index}
-            onOpenHookModal={onOpenHookModal}
-            onOpenSubtitleModal={onOpenSubtitleModal}
-            onOpenReframeModal={onOpenReframeModal}
-            onModeChanged={handleModeChanged}
           />
         ))}
       </div>
