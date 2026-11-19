@@ -21,16 +21,20 @@ export const Sidebar = () => {
             to={item.path}
             onClick={isMobile ? closeSidebar : undefined}
             className={({ isActive }) =>
-              `relative w-full flex items-center gap-3 px-3 py-2.5 rounded-input text-xs font-medium transition-all ${
+              `relative w-full flex items-center justify-between px-3 py-2.5 rounded-input text-xs font-medium transition-all ${
                 isActive
                   ? 'bg-paper3 text-ink shadow-xs border border-rule/50'
                   : 'text-muted hover:text-ink hover:bg-paper3/40'
               }`
             }
           >
-            <Icon size={17} className="shrink-0" />
-            <span className="truncate">{item.label}</span>
-            
+            <div className="flex items-center gap-3 min-w-0">
+              <Icon size={17} className="shrink-0" />
+              <span className="truncate lowercase">{item.label}</span>
+            </div>
+            <span className="text-[10px] font-mono text-muted/60 shrink-0">
+              {item.byok ? `BYOK ${item.ord}` : item.ord}
+            </span>
           </NavLink>
         );
       })}

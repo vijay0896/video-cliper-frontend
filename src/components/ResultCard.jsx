@@ -80,7 +80,8 @@ export default function ResultCard({ clip, index, jobId, durable, uploadPostKey,
     const [showDescModal, setShowDescModal] = useState(false);
     const [showSubtitleModal, setShowSubtitleModal] = useState(false);
     const [showWatermarkModal, setShowWatermarkModal] = useState(false);
-    const { plan } = useAuth();
+    const auth = useAuth() || {};
+    const plan = auth.plan || 'free';
     const videoRef = React.useRef(null);
 
     // Normalize caption timestamps relative to clip start

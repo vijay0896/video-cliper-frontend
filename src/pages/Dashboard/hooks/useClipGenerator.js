@@ -62,32 +62,38 @@ export function useClipGenerator() {
     }
   }, [statusData, dispatch]);
 
-  // Handle Form Submission
-  const handleStartGeneration = async ({ url, file, options = {} }) => {
-    if (!geminiApiKey) {
-      toast.warn('Please configure your Google Gemini API key first in Settings');
-      return;
-    }
-
+  // Handle Form Submission - accepts both { url, file, options } and { type, payload, ... }
+  const handleStartGeneration = async (input) => {
     try {
       let body;
       let media;
+      const url = input.url || (input.type === 'url' ? input.payload : null);
+      const file = input.file || (input.type === 'file' ? input.payload : null);
+      const targetClips = parseInt(input.targetClips || input.options?.targetClips || 3, 10);
+      const clipMinSeconds = parseInt(input.clipMinSeconds || input.options?.clipMinSeconds || 15, 10);
+      const clipMaxSeconds = parseInt(input.clipMaxSeconds || input.options?.clipMaxSeconds || 60, 10);
+      const liveCaptureSeconds = parseInt(input.liveCaptureSeconds || input.options?.liveCaptureSeconds || 300, 10);
+      const outputFormat = input.outputFormat || input.options?.outputFormat || 'vertical';
 
       if (url) {
         body = {
           url,
-          targetClips: options.targetClips || 3,
-          clipMinSeconds: options.clipMinSeconds || 15,
-          clipMaxSeconds: options.clipMaxSeconds || 60,
-          liveCaptureSeconds: options.liveCaptureSeconds || 300,
+          targetClips,
+          target_clips: targetClips,
+          clipMinSeconds,
+          clipMaxSeconds,
+          liveCaptureSeconds,
+          outputFormat,
         };
         media = { type: 'url', payload: url };
       } else if (file) {
         const formData = new FormData();
         formData.append('file', file);
-        if (options.targetClips) formData.append('targetClips', options.targetClips);
-        if (options.clipMinSeconds) formData.append('clipMinSeconds', options.clipMinSeconds);
-        if (options.clipMaxSeconds) formData.append('clipMaxSeconds', options.clipMaxSeconds);
+        formData.append('targetClips', String(targetClips));
+        formData.append('target_clips', String(targetClips));
+        formData.append('clipMinSeconds', String(clipMinSeconds));
+        formData.append('clipMaxSeconds', String(clipMaxSeconds));
+        formData.append('outputFormat', outputFormat);
         body = formData;
         media = { type: 'file', payload: file };
       } else {

@@ -46,7 +46,7 @@ export default function MediaInput({ onProcess, isProcessing }) {
     // Advanced generation controls — empty string means "let the AI decide",
     // which keeps the default pipeline behavior untouched.
     const [showAdvanced, setShowAdvanced] = useState(false);
-    const [targetClips, setTargetClips] = useState('');
+    const [targetClips, setTargetClips] = useState('3');
     const [clipMinSeconds, setClipMinSeconds] = useState('');
     const [clipMaxSeconds, setClipMaxSeconds] = useState('');
     // Auto-hook: burn the AI hook text into every clip. On by default; the
@@ -266,6 +266,35 @@ export default function MediaInput({ onProcess, isProcessing }) {
                     range={range}
                     onRangeChange={setRange}
                 />
+
+                {/* Target Reels Selector: 1, 3, 5, 7, 9, 10 */}
+                <div className="mt-5">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="eyebrow">Number of reels</p>
+                        <span className="text-xs text-brass font-mono">
+                            {targetClips ? `${targetClips} ${targetClips === '1' ? 'reel' : 'reels'}` : '3 reels'}
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-6 gap-2">
+                        {['1', '3', '5', '7', '9', '10'].map((num) => {
+                            const active = String(targetClips) === num;
+                            return (
+                                <button
+                                    key={num}
+                                    type="button"
+                                    onClick={() => setTargetClips(num)}
+                                    className={`py-2 px-1 text-center font-mono text-sm rounded-input border transition-all cursor-pointer ${
+                                        active
+                                            ? 'border-brass bg-brass/15 text-brass font-bold shadow-sm'
+                                            : 'border-rule2 text-muted hover:border-brass/50 hover:text-ink'
+                                    }`}
+                                >
+                                    {num}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
 
                 {/* Output format selector */}
                 <div className="mt-5" data-tutorial="output-format">

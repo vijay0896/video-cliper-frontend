@@ -31,9 +31,19 @@ const readGoogleLogin = () => {
   return null;
 };
 
-const AuthContext = createContext(null);
+const defaultAuth = {
+  billingEnabled: false,
+  isManaged: false,
+  isSignedIn: false,
+  plan: 'free',
+  me: null,
+  refreshMe: () => {},
+  logout: () => {},
+};
+
+const AuthContext = createContext(defaultAuth);
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => useContext(AuthContext) || defaultAuth;
 
 export function AuthProvider({ children }) {
   const [config, setConfig] = useState({ billingEnabled: false, googleAuthEnabled: false });
