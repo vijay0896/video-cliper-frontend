@@ -97,8 +97,8 @@ export default function ResultCard({ clip, index, jobId, durable, uploadPostKey,
         }));
     }, [clip.captions, clip.start]);
 
-    // Live automatic captions on the video player (enabled by default)
-    const [captionsEnabled, setCaptionsEnabled] = useState(true);
+    // Live automatic captions on the video player (disabled by default as per user preference)
+    const [captionsEnabled, setCaptionsEnabled] = useState(false);
     // Pristine base clip (no burned subtitles/hook), stable regardless of how
     // clip.video_url mutates after server edits. Used as the compositing base
     // for the Remotion preview so it never stacks subtitles over an already-
@@ -866,12 +866,12 @@ export default function ResultCard({ clip, index, jobId, durable, uploadPostKey,
                 which pushed the title, captions and every action off-screen.
                 Capping the height and centring keeps the whole card scannable
                 without letterboxing the clip. */}
-            <div className="w-full max-w-[calc(64vh*0.5625)] md:max-w-none mx-auto md:mx-0 md:w-[236px] bg-black relative shrink-0 aspect-[9/16] md:aspect-auto group/video">
+            <div className="w-full max-w-[calc(64vh*0.5625)] md:max-w-none mx-auto md:mx-0 md:w-[270px] bg-black relative shrink-0 aspect-[9/16] group/video rounded-lg overflow-hidden flex items-center justify-center self-center md:self-start">
                 <video
                     ref={videoRef}
                     src={playbackUrl}
                     controls
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                     playsInline
                     onLoadedMetadata={(e) => {
                         if (e.target.videoWidth) {
