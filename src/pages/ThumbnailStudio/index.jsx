@@ -6,9 +6,10 @@ import React from 'react';
 import ThumbnailStudio from '../../components/ThumbnailStudio.jsx';
 
 export default function ThumbnailStudioPage() {
+  const geminiApiKey = localStorage.getItem('gemini_key') || '';
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <ThumbnailStudio />
+      <ThumbnailStudio geminiApiKey={geminiApiKey} />
     </div>
   );
 }

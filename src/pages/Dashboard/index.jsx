@@ -129,15 +129,7 @@ export default function DashboardPage() {
                 <p className="text-muted text-[15px] sm:text-lg leading-snug sm:leading-normal max-w-sm sm:max-w-none mx-auto">
                   Drop your long-form video below to instantly generate viral clips with AI.
                 </p>
-                <p className="text-xs text-muted">
-                  Or let an agent do it:{' '}
-                  <a
-                    href="#app"
-                    className="text-ink2 underline underline-offset-2 hover:text-brass transition-colors"
-                  >
-                    connect Claude, ChatGPT or n8n →
-                  </a>
-                </p>
+                
               </div>
 
               {/* Media input form with Target Reels selector (1, 3, 5, 7, 9, 10) */}
