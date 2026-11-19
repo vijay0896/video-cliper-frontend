@@ -5,7 +5,6 @@
 import {
   LayoutDashboard,
   Image,
-  History,
   Settings,
 } from 'lucide-react';
 

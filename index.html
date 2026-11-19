@@ -324,8 +324,8 @@
           if (started) return false;
           // Vite substitutes these at build time and leaves the placeholder literal
           // in place when the variable is undefined.
-          var apiUrl = "%VITE_OPENPANEL_API_URL%";
-          var clientId = "%VITE_OPENPANEL_CLIENT_ID%";
+          var apiUrl = "";
+          var clientId = "";
           var unset = function (v) { return !v || v.charAt(0) === "%"; };
           if (unset(apiUrl) || unset(clientId)) return false;
 
