@@ -4,7 +4,6 @@
  */
 import {
   LayoutDashboard,
-  Bot,
   Image,
   History,
   Settings,
@@ -21,18 +20,9 @@ export const NAVIGATION_ITEMS = [
     primary: true,
   },
   {
-    id: 'ai-agent',
-    path: '/ai-agent',
-    ord: '02',
-    icon: Bot,
-    label: 'AI Agent',
-    short: 'Agent',
-    byok: true,
-  },
-  {
     id: 'thumbnails',
     path: '/thumbnails',
-    ord: '03',
+    ord: '02',
     icon: Image,
     label: 'YouTube Studio',
     short: 'Studio',
@@ -41,7 +31,7 @@ export const NAVIGATION_ITEMS = [
   {
     id: 'settings',
     path: '/settings',
-    ord: '04',
+    ord: '03',
     icon: Settings,
     label: 'Settings',
     short: 'Settings',

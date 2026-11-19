@@ -9,7 +9,6 @@ import { TableSkeleton } from '../components/common/TableSkeleton.jsx';
 
 // Code-split Lazy Loaded Pages
 const DashboardPage = lazy(() => import('../pages/Dashboard/index.jsx'));
-const AiAgentPage = lazy(() => import('../pages/AiAgent/index.jsx'));
 const ThumbnailStudioPage = lazy(() => import('../pages/ThumbnailStudio/index.jsx'));
 const SettingsPage = lazy(() => import('../pages/Settings/index.jsx'));
 const LegalPage = lazy(() => import('../pages/Legal/index.jsx'));
@@ -35,11 +34,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'ai-agent',
-        element: (
-          <Suspense fallback={<PageFallback />}>
-            <AiAgentPage />
-          </Suspense>
-        ),
+        element: <Navigate to="/" replace />,
       },
       {
         path: 'thumbnails',
