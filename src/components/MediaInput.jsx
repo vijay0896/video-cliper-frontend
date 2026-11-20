@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link2, Upload, FileVideo, X, Info, Loader2, ChevronDown } from 'lucide-react';
-import { track } from '../lib/analytics';
 import { getApiUrl } from '../config';
-import SourceCost from './SourceCost';
 
 const SUPPORTED_PLATFORMS = [
     'YouTube', 'Vimeo', 'TikTok', 'X / Twitter', 'Twitch', 'Kick',
@@ -84,7 +82,7 @@ export default function MediaInput({ onProcess, isProcessing }) {
             if (cancelled) return;
             setFileSeconds(d);
             if (d != null && d < MIN_SOURCE_SECONDS) {
-                track('SourceTooShort', { props: { seconds: String(Math.round(d)) } });
+                // file below minimum threshold
             }
         });
         return () => { cancelled = true; };
@@ -258,14 +256,6 @@ export default function MediaInput({ onProcess, isProcessing }) {
                         )}
                     </div>
                 )}
-
-                <SourceCost
-                    mode={mode}
-                    url={url}
-                    fileSeconds={fileSeconds}
-                    range={range}
-                    onRangeChange={setRange}
-                />
 
                 {/* Target Reels Selector: 1, 3, 5, 7, 9, 10 */}
                 <div className="mt-5">
