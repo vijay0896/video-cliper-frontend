@@ -11,7 +11,6 @@ import { TableSkeleton } from '../components/common/TableSkeleton.jsx';
 const DashboardPage = lazy(() => import('../pages/Dashboard/index.jsx'));
 const ThumbnailStudioPage = lazy(() => import('../pages/ThumbnailStudio/index.jsx'));
 const SettingsPage = lazy(() => import('../pages/Settings/index.jsx'));
-const LegalPage = lazy(() => import('../pages/Legal/index.jsx'));
 
 const PageFallback = () => (
   <div className="p-8 max-w-4xl mx-auto">
@@ -49,14 +48,6 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageFallback />}>
             <SettingsPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'legal',
-        element: (
-          <Suspense fallback={<PageFallback />}>
-            <LegalPage />
           </Suspense>
         ),
       },
