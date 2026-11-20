@@ -74,6 +74,8 @@ export function useClipGenerator() {
       const clipMaxSeconds = parseInt(input.clipMaxSeconds || input.options?.clipMaxSeconds || 60, 10);
       const liveCaptureSeconds = parseInt(input.liveCaptureSeconds || input.options?.liveCaptureSeconds || 300, 10);
       const outputFormat = input.outputFormat || input.options?.outputFormat || 'vertical';
+      const startTime = input.startTime || input.sourceStart || input.options?.startTime || null;
+      const endTime = input.endTime || input.sourceEnd || input.options?.endTime || null;
 
       if (url) {
         body = {
@@ -84,6 +86,10 @@ export function useClipGenerator() {
           clipMaxSeconds,
           liveCaptureSeconds,
           outputFormat,
+          startTime,
+          endTime,
+          sourceStart: startTime,
+          sourceEnd: endTime,
         };
         media = { type: 'url', payload: url };
       } else if (file) {
@@ -94,6 +100,14 @@ export function useClipGenerator() {
         formData.append('clipMinSeconds', String(clipMinSeconds));
         formData.append('clipMaxSeconds', String(clipMaxSeconds));
         formData.append('outputFormat', outputFormat);
+        if (startTime) {
+          formData.append('startTime', startTime);
+          formData.append('sourceStart', startTime);
+        }
+        if (endTime) {
+          formData.append('endTime', endTime);
+          formData.append('sourceEnd', endTime);
+        }
         body = formData;
         media = { type: 'file', payload: file };
       } else {

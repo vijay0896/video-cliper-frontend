@@ -47,6 +47,9 @@ export default function MediaInput({ onProcess, isProcessing }) {
     const [targetClips, setTargetClips] = useState('3');
     const [clipMinSeconds, setClipMinSeconds] = useState('');
     const [clipMaxSeconds, setClipMaxSeconds] = useState('');
+    // Stream slice time window (e.g. for 24-hr YouTube streams or long podcasts)
+    const [startTime, setStartTime] = useState('');
+    const [endTime, setEndTime] = useState('');
     // Auto-hook: burn the AI hook text into every clip. On by default; the
     // choice persists so turning it off sticks across sessions.
     const [autoHook, setAutoHook] = useState(() => {
@@ -125,8 +128,10 @@ export default function MediaInput({ onProcess, isProcessing }) {
             autoHook,
             autoHookStyle,
             layout,
-            sourceStart: range ? Math.round(range.start) : null,
-            sourceEnd: range ? Math.round(range.end) : null,
+            startTime: startTime.trim() || null,
+            endTime: endTime.trim() || null,
+            sourceStart: startTime.trim() || (range ? Math.round(range.start) : null),
+            sourceEnd: endTime.trim() || (range ? Math.round(range.end) : null),
         };
         try {
             localStorage.setItem('os_auto_hook', autoHook ? '1' : '0');
@@ -331,7 +336,7 @@ export default function MediaInput({ onProcess, isProcessing }) {
                     >
                         <ChevronDown size={14} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
                         advanced options
-                        {(targetClips || clipMinSeconds || clipMaxSeconds || !autoHook) && (
+                        {(targetClips || clipMinSeconds || clipMaxSeconds || startTime || endTime || !autoHook) && (
                             <span className="text-brass">·</span>
                         )}
                     </button>
@@ -373,6 +378,43 @@ export default function MediaInput({ onProcess, isProcessing }) {
                                 Targets, not guarantees: the AI returns fewer clips when the
                                 material doesn't hold them. Leave blank to let it decide.
                             </p>
+
+                            {/* Stream / Video Time Window Slice */}
+                            <div className="col-span-1 sm:col-span-3 pt-3 sm:pt-2 border-t border-rule">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-medium text-ink2 lowercase flex items-center gap-1.5">
+                                        stream / video cut window
+                                    </span>
+                                    {(startTime || endTime) && (
+                                        <span className="text-[11px] font-mono text-brass bg-brass/10 px-2 py-0.5 rounded">
+                                            {startTime || '00:00:00'} ➔ {endTime || 'end'}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <input
+                                            type="text"
+                                            value={startTime}
+                                            onChange={(e) => setStartTime(e.target.value)}
+                                            placeholder="From (e.g. 02:00:00)"
+                                            className="input-field font-mono text-xs"
+                                        />
+                                    </div>
+                                    <div>
+                                        <input
+                                            type="text"
+                                            value={endTime}
+                                            onChange={(e) => setEndTime(e.target.value)}
+                                            placeholder="To (e.g. 03:00:00)"
+                                            className="input-field font-mono text-xs"
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-[11px] leading-relaxed text-muted mt-1.5">
+                                    ⚡ For long streams (e.g. IShowSpeed 24h) or podcasts: cuts and downloads only this slice directly via byte-ranges. Supports <code className="text-brass">02:00:00</code>, <code className="text-brass">90m</code>, or seconds.
+                                </p>
+                            </div>
                             <div className="col-span-1 sm:col-span-3 flex flex-wrap items-center justify-between gap-3 pt-3 sm:pt-1 border-t border-rule">
                                 <span className="text-xs text-ink2">vertical layout</span>
                                 <select
