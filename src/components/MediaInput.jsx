@@ -128,10 +128,10 @@ export default function MediaInput({ onProcess, isProcessing }) {
             autoHook,
             autoHookStyle,
             layout,
-            startTime: startTime.trim() || null,
-            endTime: endTime.trim() || null,
-            sourceStart: startTime.trim() || (range ? Math.round(range.start) : null),
-            sourceEnd: endTime.trim() || (range ? Math.round(range.end) : null),
+            startTime: startTime.trim() || undefined,
+            endTime: endTime.trim() || undefined,
+            sourceStart: startTime.trim() || (range ? Math.round(range.start) : undefined),
+            sourceEnd: endTime.trim() || (range ? Math.round(range.end) : undefined),
         };
         try {
             localStorage.setItem('os_auto_hook', autoHook ? '1' : '0');
